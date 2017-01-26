@@ -1,3 +1,13 @@
+The following are the changes in the 3.8.8 release of Snapdragon LLVM ARM
+C/C++ Toolchain over the 3.8.7 release
+
+1. Be more conservative with FP optimizations when handling FP Min/Max
+2. Prevent speculative conditional loads
+3. Prevent access of address beyond buffer range in multi-stride optimizations
+4. Fix register allocation issue in certain corner cases involving vector
+divide instructions
+
+
 The following are the changes in the 3.8.7 release of Snapdragon LLVM ARM
 C/C++ Toolchain over the 3.8.6 release
 
