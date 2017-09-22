@@ -1,89 +1,49 @@
-The following are the changes in the 3.8.8 release of Snapdragon LLVM ARM
-C/C++ Toolchain over the 3.8.7 release
+This is the Snapdragon LLVM ARM C/C++ compiler toolchain 4.0.2 release. This
+is a cross toolchain built to run on x86 64-bit Ubuntu Linux (versions 12.04
+and later). The Snapdragon LLVM ARM Compiler will only generate code for ARM
+targets and will not generate code for any of the other targets supported by
+the AOSP LLVM compiler.
 
-1. Be more conservative with FP optimizations when handling FP Min/Max
-2. Prevent speculative conditional loads
-3. Prevent access of address beyond buffer range in multi-stride optimizations
-4. Fix register allocation issue in certain corner cases involving vector
-divide instructions
-
-
-The following are the changes in the 3.8.7 release of Snapdragon LLVM ARM
-C/C++ Toolchain over the 3.8.6 release
-
-1. Fixes for segmentation fault when building large codebases with LTO
-2. Fix for incorrect instruction combining optimization
-3. Fix for incorrect branch select optimization
-
----------------------------------------------------------------------------
-
-The following are the changes in the 3.8.6 release of Snapdragon LLVM ARM
-C/C++ Toolchain over the 3.8.5 release
-
-1. Fix for halving operands exceeding size of the shift operation.
-
----------------------------------------------------------------------------
-
-The following are the changes in the 3.8.5 release of Snapdragon LLVM ARM 
-C/C++ Toolchain over the 3.8.4 release
-
-1. Fix for -femulated-tls flag not getting passed to linker during LTO.
-2. Diagnostic information for "undefined shift behavior" warning, which now
-points to the offending source line.
-3. Toolchain built with no default sysroot to prevent spurious NFS errors.
-
----------------------------------------------------------------------------
-
-The following are the changes in 3.8.4 release of Snapdragon LLVM ARM C/C++
-Toolchain over the 3.8.3 release
-1. Bug fix for error in backend when handling fp16 operation
-
------------------------------------------------------------------------------
-
-This is release 3.8.3 of Snapdragon LLVM ARM C/C++ compiler toolchain. It has
-several bug fixes over the 3.8 release described below.
-
------------------------------------------------------------------------------
-
-This is the release of Snapdragon LLVM ARM C/C++ compiler toolchain version
-3.8. This is a cross toolchain built to run on x86 64-bit Ubuntu Linux
-(versions 10.04 and later) and Windows 64-bit platforms (Windows 7 and later).
-This Snapdragon LLVM ARM Compiler will generate code only for ARM targets and
-will not generate code for any of the other targets supported by llvm.org LLVM.
-
-The version 3.8 of Snapdragon LLVM ARM Compiler is based off the llvm.org 3.8
-release. Snapdragon LLVM ARM toolchain 3.8 release includes proprietary
-features and optimizations that are not available in the llvm.org release.
+Version 4.0 of the Snapdragon LLVM ARM Compiler includes all changes in the 
+llvm.org 4.0 release, and additionally includes patches that are post-4.0 
+llvm.org release. This version of the Snapdragon LLVM ARM toolchain includes 
+proprietary features and optimizations that are not available in the llvm.org
+release or the AOSP LLVM compiler.
 
 The Snapdragon LLVM ARM Compiler uses the integrated assembler for assembling
-and relies on GNU tools for linking. It also includes a full featured
-proprietary linker (QC Linker) for linking.
+and includes a full featured proprietary linker (QC Linker) for linking. For 
+Android, the QC Linker is primarily used for Link Time Optimization (LTO).
 
-NOTE: GLIBCXX_3.4.18 or higher is required to run Snapdragon LLVM 3.8 on Ubuntu
-x86 64-bit hosts; this library is typically available as part of Ubuntu
-distribution or GCC-4.8 x86 distributions.
+The link below contains all the new features in the llvm.org 4.0 release.
+http://releases.llvm.org/4.0.0/docs/ReleaseNotes.html
 
-Complete user guides for this release of the Snapdragon LLVM ARM Compiler
-and Linker are avaialble as part of your download package under
-llvm-Snapdragon_LLVM_for_Android_3.8/prebuilt/<platform>/Snapdragon
-_LLVM_ARM_38_Compiler_User_Guide.pdf and Snapdragon_LLVM_ARM_38_Linker
-_User_Guide.pdf.
+The Snapdragon LLVM ARM 4.0 toolchain contains all the above features, and 
+additionally contains the following key features compared to the Snapdragon
+LLVM ARM 3.9 release:
+
+1. Compiler Features
+  - Improvements to armv7/aarch32 vector code generation
+  - Code size optimizations
+2. Security/Code Hygiene
+  - Support for whitelisting directories for static analyzer
+  - Allow blacklisting of bugs using an external file in static analyzer
+  - New options for specifying priority of static analyzer checkers 
+  - Availability of post processing script for Windows host platform
+  - New options for running the Static Analyzer on performance mode
+  - New checkers added to static analyzer
+
+This version of the Snapdragon LLVM ARM toolchain may generate additional 
+front-end warnings compared to the SDLLVM 3.9 version.  However, we expect
+it to be better performing than the 3.9 release.  We recommend using this 
+version for performance critical components (where possible).
+
+The complete Compiler User Guide for this release of the Snapdragon LLVM ARM
+Compiler is avaialble as part of your download package under
+llvm-Snapdragon_LLVM_for_Android_4.0/prebuilt/<platform>/Snapdragon
+_LLVM_ARM_40_Compiler_User_Guide.pdf.
 
 Please post all questions about this release to
 http://developer.qualcomm.com/llvm-forum.
-
-The following are some of the key features in the 3.8 version compared to the
-3.7 version:
-
-1. Full support for building Android code base without any changes to the
-build system.
-
-2. Availability of all features from the llvm.org 3.8 release, including
-developmental support for half float.
-
-2. Integration with Symphony (previously known as MARE) to enable users to use
-an alternative Auto par runtime system. Please refer to section 4.5.1 of the
-Snapdragon LLVM ARM Compiler user guide.
 
 Basic Usage & Examples:
 
@@ -104,15 +64,15 @@ clang.exe -mfloat-abi=softfp --sysroot=<path/to/sysroot> foo.c
 
 NOTE:
 On Windows, the LTO feature can only be used with the QC linker (ld.qcld).
-It cannot be used with the gold linker plugin since the plugin is not available
-for Windows platform.
+It cannot be used with the gold linker plugin since the plugin is not
+available for Windows platform.
 
 For Linux:
 
 Note that the Linux version of clang is built with support for using GCC 4.9.0
-sysroot by default. Users can use a different sysroot (such as GCC-4.8 sysroot)
-by using the --sysroot option as described in section 3.8 of the Snapdragon ARM
-LLVM Compiler guide. 
+sysroot by default. Users can use a different sysroot (such as GCC-4.8 
+sysroot) by using the --sysroot option as described in section 4.5 of the 
+Snapdragon LLVM ARM Compiler User Guide.
 
 Examples of clang driver usage on Linux:
 clang -march=armv7-a -mfloat-abi=softfp -mfpu=neon -O3 -o foo foo.c
@@ -128,10 +88,10 @@ static executables which do not have dependence on runtime OS libraries.
 
 Options:
 
-To find out the most common options, please pass -help flag to the clang
+To find out the most common options, please pass the -help flag to the clang
 driver. This will report the Snapdragon LLVM ARM specific options and
 general ARM options first, before listing target independent options
-available in Snapdragon LLVM ARM Compiler.
+available in the Snapdragon LLVM ARM Compiler.
 
 Compiler options for best performance:
 
@@ -147,18 +107,19 @@ on a variety of ARMv7 cores, but still optimize for best performance on Krait
 cores, we recommend the "-Ofast -march=armv7-a -mfpu=neon" options.
 
 The -Ofast option enables several high performance optimizations such as
-Auto-vectorizer. Please refer to section 3.4.19 of the Snapdragon LLVM ARM
-Compiler guide for more details.
+Auto-vectorizer. Please refer to section 4.3.19 of the Snapdragon LLVM ARM
+Compiler User Guide for more details.
 
 Compiler options for smallest code-size:
 
-We recommending using the "-Osize -mthumb" options to generate the most compact
-code with the Snapdragon LLVM 3.8 compiler. Please refer to section 3.4.19 for
-more details on the -Osize optimization level
+We recommending using the "-Osize -mthumb" options to generate the most
+compact code with the Snapdragon LLVM ARM 4.0 compiler. Please refer to
+section 3.4.19 of the Snapdragon LLVM ARM Compiler User Guide for more details
+on the -Osize optimization level.
 
 Compiling for AArch64:
-To compile for AArch64 (ARMv8 64-bit mode), please pass the following option to
-clang:
+To compile for AArch64 (ARMv8 64-bit mode), please pass the following option
+to clang:
  -target aarch64-linux-gnu
 
 Compiling for AArch32:
@@ -170,7 +131,7 @@ there are newer instructions in AArch32 ISA compared to ARMv7 ISA.
 This means that AArch32 executables cannot be executed on ARMv7 cores such
 as Krait.
 
-Please refer to section 3.4.19 of the Snapdragon LLVM ARM Compiler user guide
+Please refer to section 3.4.19 of the Snapdragon LLVM ARM Compiler User Guide
 to learn about various optimization flags.
 
 LLVM's Support for GCC command line options:

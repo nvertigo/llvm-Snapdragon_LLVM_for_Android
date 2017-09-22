@@ -24,8 +24,9 @@ use Cwd qw/ getcwd abs_path /;
 use Sys::Hostname;
 use Data::Dumper;
 use Config;
+use File::Copy qw(copy), qw(move);
 
-my $Windows = "\r";
+my $Windows = "";
 if ($Config{osname} =~ "linux") {
   $Windows = "";
 }
@@ -38,8 +39,7 @@ my $BuildDate;
 my $TERM = $ENV{'TERM'};
 my $UseColor = (defined $TERM and $TERM =~ 'xterm-.*color' and -t STDOUT
                 and defined $ENV{'SCAN_BUILD_COLOR'});
-
-my $UserName = HtmlEscape(getpwuid($<) || 'unknown');
+my $UserName = HtmlEscape(getlogin || getpwuid($<) || 'unknown');
 my $HostName = HtmlEscape(hostname() || 'unknown');
 my $CurrentDir = HtmlEscape(getcwd());
 my $CurrentDirSuffix = basename($CurrentDir);
@@ -49,6 +49,12 @@ my $Date = localtime();
 
 my $HtmlDir;
 my $HtmlDirSpecified = 0;
+my $BlacklistFile;
+my $BlacklistFileSpecified = 0;
+my @Blacklist;
+my $WhitelistFile;
+my $WhitelistFileSpecified = 0;
+my @Whitelist;
 my $AnalyzerStats = 0;
 my $KeepEmpty = 0;
 
@@ -116,26 +122,49 @@ sub DieDiag {
 sub CopyFiles {
 
   my $Dir = shift;
-
   my $JS = Cwd::realpath("$RealBin/../share/scan-build/sorttable.js");
+  if($^O eq "MSWin32")
+  {
+    $JS = File::Spec->rel2abs("$RealBin/../share/scan-build/sorttable.js");
+  }
 
   DieDiag("Cannot find 'sorttable.js'.\n")
     if (! -r $JS);
 
-  system ("cp", $JS, "$Dir");
+  copy $JS, $Dir;
 
   DieDiag("Could not copy 'sorttable.js' to '$Dir'.\n")
     if (! -r "$Dir/sorttable.js");
 
   my $CSS = Cwd::realpath("$RealBin/../share/scan-build/scanview.css");
+  if($^O eq "MSWin32")
+  {
+    $CSS = File::Spec->rel2abs("$RealBin/../share/scan-build/scanview.css");
+  }
 
   DieDiag("Cannot find 'scanview.css'.\n")
     if (! -r $CSS);
 
-  system ("cp", $CSS, "$Dir");
+  copy $CSS, $Dir;
 
   DieDiag("Could not copy 'scanview.css' to '$Dir'.\n")
     if (! -r $CSS);
+}
+
+##----------------------------------------------------------------------------##
+# ScanWhitelist - Scan the whitelist file for unsilenced reporistories
+##----------------------------------------------------------------------------##
+
+sub ScanWhitelist {
+
+  # Scan the report file for tags.
+  open(IN, "$WhitelistFile") or DieDiag("Cannot open '$WhitelistFile'\n");
+  while (my $row = <IN>) {
+    $row =~ s@\\@/@g;
+    chomp $row;
+    push @Whitelist, $row;
+  }
+  close(IN);
 }
 
 ##----------------------------------------------------------------------------##
@@ -181,7 +210,7 @@ sub UpdateInFilePath {
 
   close (ROUT);
   close (RIN);
-  system("mv", "$fname.tmp", $fname);
+  move "$fname.tmp", $fname;
 }
 
 ##----------------------------------------------------------------------------##
@@ -204,6 +233,25 @@ sub ComputeDigest {
   # Return the digest.
   return $Result;
 }
+
+##----------------------------------------------------------------------------##
+# ScanBlacklist - Scan the blacklist file for silenced bugs.
+##----------------------------------------------------------------------------##
+
+sub ScanBlacklist {
+
+  # Scan the report file for tags.
+  open(IN, "$BlacklistFile") or DieDiag("Cannot open '$BlacklistFile'\n");
+  while (my $row = <IN>) {
+    $row =~ s/^\s+|\s+$//g;
+    push @Blacklist, $row;
+  }
+  close(IN);
+}
+
+##----------------------------------------------------------------------------##
+# ShowProgress - Show the progress of post-processing on user terminal.
+##----------------------------------------------------------------------------##
 
 my $printedPerc = 0;
 sub ShowProgress {
@@ -232,7 +280,7 @@ my %AlreadyScanned;
 sub ScanFile {
 
   my $Index = shift;
-  my $Dir = shift;
+  my $Dir   = shift;
   my $FName = shift;
   my $Stats = shift;
 
@@ -243,24 +291,34 @@ sub ScanFile {
 
   if (defined $AlreadyScanned{$digest}) {
     # Redundant file.  Remove it.
-    system ("rm", "-f", "$Dir/$FName");
+    unlink "$Dir/$FName";
     return;
   }
 
   $AlreadyScanned{$digest} = 1;
 
   # At this point the report file is not world readable.  Make it happen.
-  system ("chmod", "644", "$Dir/$FName");
+  if($^O eq "MSWin32")
+  {
+    chmod("+rw", "$Dir/$FName");
+  }
+  else
+  {
+    system ("chmod", "644", "$Dir/$FName");
+  }
 
   # Scan the report file for tags.
   open(IN, "$Dir/$FName") or DieDiag("Cannot open '$Dir/$FName'\n");
 
   my $BugType        = "";
   my $BugFile        = "";
+  my $FunctionName   = "";
   my $BugCategory    = "";
   my $BugDescription = "";
   my $BugPathLength  = 1;
   my $BugLine        = 0;
+  my $FileName       = "";
+  my $BugDir         = "";
 
   if ($Verbose) {
     Diag("Analyzing '$Dir/$FName'\n");
@@ -286,6 +344,12 @@ sub ScanFile {
     elsif (/<!-- BUGDESC (.*) -->$Windows$/) {
       $BugDescription = $1;
     }
+    elsif (/<!-- FUNCTIONNAME (.*) -->$Windows$/) {
+      $FunctionName = $1;
+    }
+    elsif (/<!-- FILENAME (.*) -->$Windows$/) {
+      $FileName = $1;
+    }
   }
 
   close(IN);
@@ -294,6 +358,36 @@ sub ScanFile {
     $BugCategory = "Other";
   }
 
+  if (!defined $FunctionName) {
+    $FunctionName = "Global";
+  }
+
+  if($BlacklistFileSpecified){
+    my $BugSummary = "${FileName} ${FunctionName} ${BugDescription}";
+    if (grep {$_ eq $BugSummary} @Blacklist) {
+      # Redundant file.  Remove it.
+       unlink "$Dir/$FName";
+       return;
+     }
+   }
+
+  if($WhitelistFileSpecified) {
+    my $Whitelisted = 0;
+    $BugDir = $BugFile;
+    $BugDir =~ s@\\@/@g;
+    chomp $BugDir;
+    foreach (@Whitelist) {
+      if (index($BugDir, $_) != -1) {
+        $Whitelisted = 1;
+      }
+    }
+    if($Whitelisted == 0) {
+       unlink "$Dir/$FName";
+       return;
+     }
+   }
+
+
   # Don't add internal statistics to the bug reports
   if ($BugCategory =~ /statistics/i) {
     AddStatLine($BugDescription, $Stats, $BugFile);
@@ -301,7 +395,7 @@ sub ScanFile {
   }
 
   push @$Index,[ $FName, $BugCategory, $BugType, $BugFile, $BugLine,
-                 $BugPathLength ];
+                 $FunctionName, $BugPathLength ];
 }
 
 ##----------------------------------------------------------------------------##
@@ -327,16 +421,23 @@ sub Postprocess {
   if ($numFilesFound == 0 and ! -e "$Dir/failures") {
     if (! $KeepEmpty) {
       Diag("Removing directory '$Dir' because it contains no reports.\n");
-      system ("rm", "-fR", $Dir);
+      rmdir $Dir;
     }
     Diag("No bugs found.\n");
     return 0;
+  }
+
+  if($WhitelistFileSpecified){
+    ScanWhitelist();
   }
 
   # Scan each report file and build an index.
   my @Index;
   my @Stats;
   my $numFilesScanned = 1;
+  if($BlacklistFileSpecified){
+    ScanBlacklist();
+  }
   foreach my $file (@filesFound) {
     ScanFile(\@Index, $Dir, $file, \@Stats);
     if (!$Verbose) {
@@ -714,6 +815,14 @@ OPTIONS:
    Specify the title used on generated HTML pages. If not specified, a default
    title will be used.
 
+ --blacklist-file <abs location of blacklist file>
+
+   Specifies the location of the blacklist file. Contents of the file should be
+   row-wise entries in the format:
+   <filename.extension> <function identifier> <bug description>
+   example:
+   test.cpp foo Address of stack memory associated with local variable 'buff' returned to caller [core.StackAddressEscape]
+
  --keep-empty
 
    Don't remove the build results directory even if no issues were reported.
@@ -725,6 +834,18 @@ OPTIONS:
  --verbose
 
    Verbose output.
+
+ --whitelist-file <location of whitelist file>
+
+   Specifies the location of the whitelist file. Contents of the file should be
+   row-wise entries of directories to be whitelisted for scanning. These entries
+   may be sub-strings of the entire directory of the file.
+   example:
+   modem_proc/my/project
+   qcomm
+   Will ensure that any reports that are in directories containing the substrings
+   above will be displayed while those that don't wont.
+
 ENDTEXT
 }
 
@@ -757,6 +878,20 @@ while (@ARGV) {
     next;
   }
 
+    if ($arg eq "--whitelist-file") {
+    shift @ARGV;
+
+    if (!@ARGV) {
+      DieDiag("'--whitelist-dir' option requires a target filename.\n");
+    }
+
+    # Construct an absolute path.  Uses the current working directory
+    # as a base if the original path was not absolute.
+    $WhitelistFile = abs_path(shift @ARGV);
+    $WhitelistFileSpecified = 1;
+    next;
+  }
+
   if ($arg eq "--report-dir") {
     shift @ARGV;
 
@@ -768,6 +903,24 @@ while (@ARGV) {
     # as a base if the original path was not absolute.
     $HtmlDir = abs_path(shift @ARGV);
     $HtmlDirSpecified = 1;
+    next;
+  }
+
+  if ($arg eq "--blacklist-file") {
+    shift @ARGV;
+
+    if (!@ARGV) {
+      DieDiag("'--blacklist-file' option requires a target file name.\n");
+    }
+
+    # Construct an absolute path.  Uses the current working directory
+    # as a base if the original path was not absolute.
+    $BlacklistFile = abs_path(shift @ARGV);
+
+    DieDiag("Cannot find Blacklist file $BlacklistFile\n")
+      if (! -r $BlacklistFile);
+
+    $BlacklistFileSpecified = 1;
     next;
   }
 
