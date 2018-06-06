@@ -358,19 +358,6 @@ sub ScanFile {
     $BugCategory = "Other";
   }
 
-  if (!defined $FunctionName) {
-    $FunctionName = "Global";
-  }
-
-  if($BlacklistFileSpecified){
-    my $BugSummary = "${FileName} ${FunctionName} ${BugDescription}";
-    if (grep {$_ eq $BugSummary} @Blacklist) {
-      # Redundant file.  Remove it.
-       unlink "$Dir/$FName";
-       return;
-     }
-   }
-
   if($WhitelistFileSpecified) {
     my $Whitelisted = 0;
     $BugDir = $BugFile;
@@ -382,11 +369,23 @@ sub ScanFile {
       }
     }
     if($Whitelisted == 0) {
-       unlink "$Dir/$FName";
-       return;
-     }
-   }
+      unlink "$Dir/$FName";
+      return;
+    }
+  }
 
+  if (!defined $FunctionName) {
+    $FunctionName = "Global";
+  }
+
+  if($BlacklistFileSpecified){
+    my $BugSummary = "${FileName} ${FunctionName} ${BugDescription}";
+    if (grep {$_ eq $BugSummary} @Blacklist) {
+      # Redundant file.  Remove it.
+      unlink "$Dir/$FName";
+      return;
+    }
+  }
 
   # Don't add internal statistics to the bug reports
   if ($BugCategory =~ /statistics/i) {
@@ -439,7 +438,7 @@ sub Postprocess {
     ScanBlacklist();
   }
   foreach my $file (@filesFound) {
-    ScanFile(\@Index, $Dir, $file, \@Stats);
+    ScanFile(\@Index, $Dir, $file , \@Stats);
     if (!$Verbose) {
       ShowProgress($numFilesScanned, $numFilesFound);
     }

@@ -1,46 +1,87 @@
-This is the Snapdragon LLVM ARM C/C++ compiler toolchain 4.0.2 release. This
-is a cross toolchain built to run on x86 64-bit Ubuntu Linux (versions 12.04
-and later). The Snapdragon LLVM ARM Compiler will only generate code for ARM
-targets and will not generate code for any of the other targets supported by
-the AOSP LLVM compiler.
+The following are the changes in the 6.0.2 release of the Snapdragon LLVM ARM
+C/C++ Toolchain over the 6.0.1 release.
 
-Version 4.0 of the Snapdragon LLVM ARM Compiler includes all changes in the 
-llvm.org 4.0 release, and additionally includes patches that are post-4.0 
-llvm.org release. This version of the Snapdragon LLVM ARM toolchain includes 
+1. Allow LTO to link together objects built with a different "-mcpu"
+   specification
+2. Fix incorrect "Could not set section name for symbol" warnings with LTO
+3. Fix incorrect warning using -fqc-embed-bitcode
+4. Fix crashes in certain loop optimization corner cases
+5. Don't generate .eh_frame section with "-fno-exceptions -fsanitize=cfi"
+6. Fix for corner case issue in loop reroll
+
+The following are the changes in the 6.0.1 release of the Snapdragon LLVM ARM
+C/C++ Toolchain over the 6.0 release.
+
+1. Fix crash when building with Thin LTO
+2. Add  missing post-process SA scripts for Windows host
+3. Fix corner case compiler crash when resolving __stack_chk_guard
+4. Fix codegen issue for VLD3/VLD4/VST3/VST4 instructions with register
+   writeback
+
+This is the release of Snapdragon LLVM ARM C/C++ Compiler toolchain version
+6.0. This is a cross toolchain built to run on x86 64-bit Ubuntu Linux
+(versions 12.04 and later) and Windows platform (Windows 7 64-bit and later).
+The Snapdragon LLVM ARM Compiler will only generate code for ARM targets and
+will not generate code for any of the other targets supported by the AOSP LLVM
+compiler.
+
+Version 6.0 of the Snapdragon LLVM ARM toolchain includes all changes in the
+llvm.org 6.0 release, and additionally includes patches that are post-6.0
+llvm.org release. The Snapdragon LLVM ARM toolchain 6.0 release includes
 proprietary features and optimizations that are not available in the llvm.org
-release or the AOSP LLVM compiler.
+release or in the AOSP LLVM compiler.
 
 The Snapdragon LLVM ARM Compiler uses the integrated assembler for assembling
-and includes a full featured proprietary linker (QC Linker) for linking. For 
+and includes a full featured proprietary linker (QC Linker) for linking. For
 Android, the QC Linker is primarily used for Link Time Optimization (LTO).
 
-The link below contains all the new features in the llvm.org 4.0 release.
-http://releases.llvm.org/4.0.0/docs/ReleaseNotes.html
+The following link contains all the new features in the llvm.org 6.0 release.
+http://releases.llvm.org/6.0.0/docs/ReleaseNotes.html
 
-The Snapdragon LLVM ARM 4.0 toolchain contains all the above features, and 
+The Snapdragon LLVM ARM 6.0 toolchain contains all the above features, and
 additionally contains the following key features compared to the Snapdragon
-LLVM ARM 3.9 release:
+LLVM ARM 4.0 toolchain:
 
 1. Compiler Features
-  - Improvements to armv7/aarch32 vector code generation
-  - Code size optimizations
-2. Security/Code Hygiene
-  - Support for whitelisting directories for static analyzer
-  - Allow blacklisting of bugs using an external file in static analyzer
-  - New options for specifying priority of static analyzer checkers 
-  - Availability of post processing script for Windows host platform
-  - New options for running the Static Analyzer on performance mode
-  - New checkers added to static analyzer
+  - Improved debugging with LTO
+    - Ability to put breakpoints on inlined functions
+  - ThinLTO framework for ARM
+  - Code size optimizations targeting baremetal images
+  - Code coverage capabilities for baremetal images
+  - Fat object files that contain bit-code and object
+    - Simplify LTO workflow and enable LTO at a finer level
+  - Auto-vectorization of loops that contain arrays as structure members
+  - Choice of profile generation schemes for Android (for use with PGO)
+  - PGO optimization for hot-cold block separation and placement
 
-This version of the Snapdragon LLVM ARM toolchain may generate additional 
-front-end warnings compared to the SDLLVM 3.9 version.  However, we expect
-it to be better performing than the 3.9 release.  We recommend using this 
+2. Linker and binutils Features
+  - Features needed for LTO with Android kernel and other baremetal images
+    - Support FILEHDR keyword in linker script
+    - Support NOCROSSREFS keyword
+  - Support for converting stripped ELF to binary
+  - Support for re-linking final ELF executable
+  - YAML parser improvements for linker generated YAML output
+
+3. Library Features for Baremetal
+  - Performance optimization of key library routines targeting Cortex-M0
+  - Standalone standard libc subset for use in secure images
+  - Runtime libraries built with debug info
+
+4. Security/Code Hygiene Features
+  - Static Analyzer: Cross translation unit analysis
+  - Static Analyzer-Klockwork overlap: Improvements on Null pointer
+    dereference
+  - Static Analyzer: File based blacklisting
+
+This version of the Snapdragon LLVM ARM toolchain may generate additional
+front-end warnings compared to the SDLLVM 4.0 version.  However, we expect
+it to perform better than the 4.0 release.  We recommend using this
 version for performance critical components (where possible).
 
 The complete Compiler User Guide for this release of the Snapdragon LLVM ARM
-Compiler is avaialble as part of your download package under
-llvm-Snapdragon_LLVM_for_Android_4.0/prebuilt/<platform>/Snapdragon
-_LLVM_ARM_40_Compiler_User_Guide.pdf.
+Compiler is available as part of your download package under
+llvm-Snapdragon_LLVM_for_Android_6.0/prebuilt/<platform>/Snapdragon
+_LLVM_ARM_60_Compiler_User_Guide.pdf.
 
 Please post all questions about this release to
 http://developer.qualcomm.com/llvm-forum.
@@ -113,8 +154,8 @@ Compiler User Guide for more details.
 Compiler options for smallest code-size:
 
 We recommending using the "-Osize -mthumb" options to generate the most
-compact code with the Snapdragon LLVM ARM 4.0 compiler. Please refer to
-section 3.4.19 of the Snapdragon LLVM ARM Compiler User Guide for more details
+compact code with the Snapdragon LLVM ARM 6.0 compiler. Please refer to
+section 4.3.19 of the Snapdragon LLVM ARM Compiler User Guide for more details
 on the -Osize optimization level.
 
 Compiling for AArch64:
@@ -131,11 +172,11 @@ there are newer instructions in AArch32 ISA compared to ARMv7 ISA.
 This means that AArch32 executables cannot be executed on ARMv7 cores such
 as Krait.
 
-Please refer to section 3.4.19 of the Snapdragon LLVM ARM Compiler User Guide
+Please refer to section 4.3.19 of the Snapdragon LLVM ARM Compiler User Guide
 to learn about various optimization flags.
 
 LLVM's Support for GCC command line options:
 
 Most of the commonly used GCC options are supported by LLVM as well. A
-detailed list of options supported is listed in chapter 3 of the Snapdragon
+detailed list of options supported is listed in section 4 of the Snapdragon
 LLVM ARM Compiler User Guide.
