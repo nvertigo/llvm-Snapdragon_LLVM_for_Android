@@ -1,3 +1,25 @@
+The following are the changes in the 6.0.9 release of the Snapdragon LLVM ARM
+C/C++ Toolchain over the 6.0.2 release.
+
+1.  Fix a corner case in register allocation exposed by address sanitizer
+2.  Fix incorrect loop count calculation in sum-of-sum optimization in 
+    auto-vectorization
+3.  Fix division overflow error in auto-vectorization
+4.  Mark fma class of functions in Android as constants
+5.  Fix mis-compile issue when deleted function space is incorrectly reused
+6.  Fix an aggressive path in Memory SSA optimization
+7.  Disable auto-vectorization during first phase of ThinLTO
+8.  Fix QC linker to exclude symbols specified as extern, from the dynamic 
+    symbol table
+9.  Do not optimize or remove stores to address zero
+10. Fix QC linker to exclude libraries specified by filename only
+11. Fix include and library paths for embedded linux OE triples (LE only)
+12. Set debug location for calls to __safestack_pointer_address
+13. Fix issue with unreachable code in safe stack coloring
+14. During stack realignment, in certain cases, fix a bug with access to 
+    local variables
+15. Auto vectorize outer loop if more profitable than inner loop
+
 The following are the changes in the 6.0.2 release of the Snapdragon LLVM ARM
 C/C++ Toolchain over the 6.0.1 release.
 
