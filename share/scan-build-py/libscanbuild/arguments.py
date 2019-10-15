@@ -97,10 +97,12 @@ def normalize_args_for_analyze(args, from_build_command):
     if from_build_command:
         # add cdb parameter invisibly to make report module working.
         args.cdb = 'compile_commands.json'
-# Make ctu_dir an abspath as it is needed inside clang
+
+    # Make ctu_dir an abspath as it is needed inside clang
     if not from_build_command and hasattr(args, 'ctu_phases') \
             and hasattr(args.ctu_phases, 'dir'):
         args.ctu_dir = os.path.abspath(args.ctu_dir)
+
 
 def validate_args_for_analyze(parser, args, from_build_command):
     """ Command line parsing is done by the argparse module, but semantic
@@ -124,7 +126,8 @@ def validate_args_for_analyze(parser, args, from_build_command):
         parser.error(message='missing build command')
     elif not from_build_command and not os.path.exists(args.cdb):
         parser.error(message='compilation database is missing')
- # If the user wants CTU mode
+
+    # If the user wants CTU mode
     if not from_build_command and hasattr(args, 'ctu_phases') \
             and hasattr(args.ctu_phases, 'dir'):
         # If CTU analyze_only, the input directory should exist
@@ -132,9 +135,10 @@ def validate_args_for_analyze(parser, args, from_build_command):
                 and not os.path.exists(args.ctu_dir):
             parser.error(message='missing CTU directory')
         # Check CTU capability via checking clang-func-mapping
-        if not is_ctu_capable(args.clang, args.func_map_cmd):
+        if not is_ctu_capable(args.func_map_cmd):
             parser.error(message="""This version of clang does not support CTU
             functionality or clang-func-mapping command not found.""")
+
 
 def create_intercept_parser():
     """ Creates a parser for command-line arguments to 'intercept'. """
@@ -231,7 +235,6 @@ def create_analyze_parser(from_build_command):
         default='html',
         action='store_const',
         help="""Cause the results as a set of .html and .plist files.""")
-    # TODO: implement '-view '
     format_group.add_argument(
         '--plist-multi-file',
         '-plist-multi-file',
@@ -241,6 +244,7 @@ def create_analyze_parser(from_build_command):
         action='store_const',
         help="""Cause the results as a set of .plist files with extra
         information on related files.""")
+
     advanced = parser.add_argument_group('advanced options')
     advanced.add_argument(
         '--use-analyzer',
@@ -277,7 +281,7 @@ def create_analyze_parser(from_build_command):
         '-maxloop',
         metavar='<loop count>',
         type=int,
-        help="""Specifiy the number of times a block can be visited before
+        help="""Specify the number of times a block can be visited before
         giving up. Increase for more comprehensive coverage at a cost of
         speed.""")
     advanced.add_argument(
@@ -369,6 +373,7 @@ def create_analyze_parser(from_build_command):
         ctu.add_argument(
             '--ctu-dir',
             metavar='<ctu-dir>',
+            dest='ctu_dir',
             default='ctu-dir',
             help="""Defines the temporary directory used between ctu
             phases.""")

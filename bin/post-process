@@ -981,5 +981,5 @@ if (!$KeepEmpty) {
 }
 Diag("Scanning started...\n");
 my $NumBugs = Postprocess($HtmlDir, $AnalyzerStats, $KeepEmpty);
-exit $NumBugs;
+exit 0;
 
